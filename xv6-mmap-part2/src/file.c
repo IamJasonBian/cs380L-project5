@@ -22,9 +22,6 @@ fileinit(void)
   initlock(&ftable.lock, "ftable");
 }
 
-void *mmap(void *addr, uint length, int prot, int flags,
-int fd, int offset);
-
 // Allocate a file structure.
 struct file*
 filealloc(void)
@@ -157,4 +154,17 @@ filewrite(struct file *f, char *addr, int n)
   }
   panic("filewrite");
 }
+
+//go to the specified offset in the referenced file
+int
+fileseek (struct file* f, uint offset)
+{
+  begin_op();
+  ilock(f->ip);
+  f->off = offset;
+  iunlock(f->ip);
+  end_op();
+  return 0;
+}
+
 

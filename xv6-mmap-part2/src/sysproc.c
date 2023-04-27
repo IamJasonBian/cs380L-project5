@@ -91,41 +91,66 @@ sys_uptime(void)
 }
 
 int
+sys_kmalloc(void)
+{
+  int nbytes;
+  if( argint(0,&nbytes)<0  )
+    return -1;
+  return (int)kmalloc((uint)nbytes);
+}
+
+int
+sys_kmfree(void)
+{
+  int addr;
+  if( argptr(0,(void*)&addr,sizeof((void*)&addr))<0  )
+    return -1;
+  kmfree((void*)addr);
+  return 0;
+}
+
+int
 sys_mmap(void)
 {
-  int addr, len, prot, flags, fd, offset;
+  int addr;
+  int length;
+  int prot;
+  int flags;
+  int fd;
+  int offset;
 
-  if (argint(0, &addr) < 0) {
-    return 0;
+  if((argint(0, &addr) < 0) || (argint(1, &length) < 0) || (argint(2, &prot) < 0) || (argint(3, &flags) < 0) || (argint(4, &fd) < 0) || (argint(5, &offset) < 0))
+  {
+    return -1;
   }
-  if (argint(1, &len) < 0) {
-    return 0;
-  }
-  if (argint(2, &prot) < 0) {
-    return 0;
-  }
-  if (argint(3, &flags) < 0) {
-    return 0;
-  }
-  if ((void*)addr != (void*)0 && argint(4, &fd) < 0) {
-    return 0;
-  }
-  if (argint(5, &offset) < 0) {
-    return 0;
-  }
-  return (int)mmap((void*)addr, (uint)len, prot, flags, fd, offset);
+
+  return (int)mmap((void*)addr, length, prot, flags, fd, offset);
 }
 
 int
 sys_munmap(void)
 {
-  int addr, len;
+  int addr;
+  int length;
 
-  if (argint(0, &addr) < 0) {
+  if((argint(0, &addr) < 0) || (argint(1, &length) < 0))
+  {
     return -1;
   }
-  if (argint(1, &len) < 0) {
+
+  return munmap((void*)addr, (uint)length);
+}
+
+int
+sys_msync(void)
+{
+  int addr;
+  int length;
+
+  if((argint(0, &addr) < 0) || (argint(1, &length) < 0))
+  {
     return -1;
   }
-  return munmap((void*)addr, (uint)len);
+
+  return msync((void*)addr, (uint)length);
 }

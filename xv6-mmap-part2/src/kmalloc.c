@@ -1,10 +1,10 @@
 #include "types.h"
+#include "stat.h"
 #include "defs.h"
-#include "mmu.h"
+#include "param.h"
 
 // Memory allocator by Kernighan and Ritchie,
 // The C programming Language, 2nd ed.  Section 8.7.
-// Modified for allocation in the kernel.
 
 typedef long Align;
 
@@ -22,11 +22,11 @@ static Header base;
 static Header *freep;
 
 void
-kmfree(void *addr)
+kmfree(void *ap)
 {
   Header *bp, *p;
 
-  bp = (Header*)addr - 1;
+  bp = (Header*)ap - 1;
   for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
     if(p >= p->s.ptr && (bp > p || bp < p->s.ptr))
       break;
@@ -43,23 +43,22 @@ kmfree(void *addr)
   freep = p;
 }
 
+//use kalloc instead of growproc to allocate memory
+//to kernel data structures.
+//kalloc always returns PGSIZE memory on success
+//size parameter of the Header takes Header sized chunks
 static Header*
-morecore(uint nu)
+morecore()
 {
   char *p;
   Header *hp;
 
-  if (nu * sizeof(Header) > PGSIZE) {
-    panic("kmalloc: memory allocation too big");
-  }
-  if (PGSIZE % sizeof(Header) != 0) {
-    panic("kmalloc: memory allocation not (header) aligned");
-  }
-  if ((p = kalloc()) == (char*)0) {
-    panic("kmalloc: memory allocation failed");
-  }
+  p = kalloc();
+  if(p == 0)
+    return 0;
+  memset(p,0,4096);
   hp = (Header*)p;
-  hp->s.size = PGSIZE / sizeof(Header);
+  hp->s.size = 4096 / sizeof(Header);
   kmfree((void*)(hp + 1));
   return freep;
 }
@@ -70,6 +69,10 @@ kmalloc(uint nbytes)
   Header *p, *prevp;
   uint nunits;
 
+  //panic if we try to allocate more than PGSIZE bytes
+  //4088 + 8 bytes (Header )
+  if(nbytes > 4088)
+    panic("kmalloc: Cannot allocate the requested size of memory ( > PGSIZE )");
   nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
   if((prevp = freep) == 0){
     base.s.ptr = freep = prevp = &base;
@@ -88,7 +91,7 @@ kmalloc(uint nbytes)
       return (void*)(p + 1);
     }
     if(p == freep)
-      if((p = morecore(nunits)) == 0)
+      if((p = morecore()) == 0)
         return 0;
   }
 }

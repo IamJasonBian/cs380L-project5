@@ -10,6 +10,14 @@ struct sleeplock;
 struct stat;
 struct superblock;
 
+//defining pte_t - used in walkpgdir function
+#ifndef __ASSEMBLER__
+typedef uint pte_t;
+#endif
+
+//sysfile.c
+int             fdalloc(struct file*);
+
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -33,6 +41,7 @@ void            fileinit(void);
 int             fileread(struct file*, char*, int n);
 int             filestat(struct file*, struct stat*);
 int             filewrite(struct file*, char*, int n);
+int             fileseek(struct file*, uint);
 
 // fs.c
 void            readsb(int dev, struct superblock *sb);
@@ -68,10 +77,6 @@ char*           kalloc(void);
 void            kfree(char*);
 void            kinit1(void*, void*);
 void            kinit2(void*, void*);
-
-// kmalloc.c
-void*           kmalloc(uint);
-void            kmfree(void*);
 
 // kbd.c
 void            kbdintr(void);
@@ -124,8 +129,6 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
-void*           mmap(void*, uint, int, int, int, int);
-int             munmap(void*, uint);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -181,8 +184,7 @@ void            seginit(void);
 void            kvmalloc(void);
 pde_t*          setupkvm(void);
 char*           uva2ka(pde_t*, char*);
-int             allocuvm_mmap(pde_t*, uint, uint);
-int             allocuvm_proc(pde_t*, uint, uint);
+int             allocuvm(pde_t*, uint, uint);
 int             deallocuvm(pde_t*, uint, uint);
 void            freevm(pde_t*);
 void            inituvm(pde_t*, char*, uint);
@@ -192,6 +194,18 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
+int             mappages(pde_t*, void*, uint, uint, int);
+pte_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
+
+//kmalloc.c
+void*           kmalloc(uint nbytes);
+void            kmfree(void* addr);
+
+//mmap.c
+void*           mmap(void* , int, int, int, int, int);
+int             munmap(void* , uint);
+void            free_mmap_list(void);
+int             msync(void*, uint);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
